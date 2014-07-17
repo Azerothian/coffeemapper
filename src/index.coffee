@@ -1,10 +1,10 @@
 Promise = require "bluebird"
+  
 if !Array.isArray
   Array.isArray = (arg) ->
     return Object.prototype.toString.call(arg) is '[object Array]'
 isFunction = (functionToCheck) ->
-  getType = {}
-  return functionToCheck && getType.toString.call(functionToCheck) is '[object Function]'
+  return functionToCheck && {}.toString.call(functionToCheck) is '[object Function]'
 
 
 baseProcessor = {
@@ -12,6 +12,8 @@ baseProcessor = {
     return {}
   setValue: (item, key, value) ->
     item[key] = value
+  getValue: (item, key) ->
+    return item[key]
 }
 
 singleMap = (src, map, proc) ->
@@ -22,11 +24,12 @@ singleMap = (src, map, proc) ->
     p = []
     for key of map
       p.push new Promise (res, rej) ->
+        val = proc.getValue(data, key)
         if isFunction(map[key])
           map[key] src, (value) ->
             proc.setValue data, key, value
             return res()
-          , rej
+          , rej,
         #else
     Promise.all(p).then () ->
       resolve data

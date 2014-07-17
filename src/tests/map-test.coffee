@@ -54,6 +54,8 @@ elementProcessor = {
     return new Element
   setValue: (item, key, value) ->
     item[key] = value
+  getValue: (item, key) ->
+    reurn item[key]
 }
 
 
