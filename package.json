@@ -27,6 +27,8 @@
   },
   "homepage": "https://github.com/Azerothian/coffeemapper",
   "dependencies": {
-    "bluebird": "^2.2.2"
+    "bluebird": "^2.2.2",
+    "bluebird-chains": "0.0.1",
+    "debug": "^1.0.4"
   }
 }
