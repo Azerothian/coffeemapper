@@ -3,7 +3,7 @@ expect = require('chai').expect
 util = require "util"
 Element = require "./util/element"
 
-debug = require("debug")("mapper:test")
+debug = require("debug")("coffeemapper:tests:map-test")
 
 
 core = new Element
@@ -45,11 +45,13 @@ elementProcessor = {
 projectMap = {
   read:
     "name": (src, resolve, reject) ->
-      #console.log "src:", src
+      debug "projectMap.read.name", src.properties[0]
       resolve src.properties[0]
     "path": (src, resolve, reject) ->
+      debug "projectMap.read.path", src.properties[1]
       resolve src.properties[1]
     "id": (src, resolve, reject) ->
+      debug "projectMap.read.id", src.properties[2]
       resolve src.properties[2]
   write:
     "name": (src, resolve, reject) ->
@@ -89,15 +91,19 @@ elementMap = {
 
 
 describe 'Object Mapping', () ->
-  it 'Mapper Test', () ->
+  it 'coffeemapper Test', () ->
     debug "read start"
     map(core, elementMap.read).then (result) ->
-      debug "read complete"#, util.inspect(result[0])
+
+      debug "read complete", util.inspect(result[0])
       expect(result[0].Projects[0].name).to.equal("WebApplication1")
+###
       debug "write start"
       map(result[0], elementMap.write, elementProcessor).then (re) ->
         expect(re[0].elements[1].name).to.equal("Project")
         debug "write complete"#, re[0].elements[1].name
+
+
   it 'context check', ->
     test = {}
     map({hello: "hi"}, {
@@ -107,7 +113,7 @@ describe 'Object Mapping', () ->
         expect(test.troll).to.equal("hi")
         debug "test", test
 
-###
+
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{DAA7C8D8-63E8-4587-842D-B39F01718BF8}"
   ProjectSection(ProjectDependencies) = postProject
     {B68291DE-FCED-46E0-85EE-F273AA73448F} = {B68291DE-FCED-46E0-85EE-F273AA73448F}
