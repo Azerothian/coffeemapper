@@ -18,10 +18,11 @@ baseProcessor = {
     return item[key]
 }
 
-singleMap = (src, map, proc) ->
+singleMap = (src, map, proc, data) ->
   return new Promise (resolve, reject) ->
     proc = baseProcessor if !proc?
-    data = proc.newItem()
+    if !data?
+      data = proc.newItem()
     p = []
     for key of map
       p.push new Promise (res, rej) ->
@@ -35,14 +36,14 @@ singleMap = (src, map, proc) ->
     , reject
 
 
-module.exports = (src, map, proc = baseProcessor) ->
+module.exports = (src, map, proc = baseProcessor, data) ->
   return new Promise (resolve, reject) ->
     p = []
     if Array.isArray src
       for s in src
-        p.push singleMap(s, map, proc)
+        p.push singleMap(s, map, proc, data)
     else
-      p.push singleMap(src, map, proc)
+      p.push singleMap(src, map, proc, data)
 
     Promise.chains.collect(p).then (data) ->
       return resolve(data)
