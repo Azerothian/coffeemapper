@@ -1,4 +1,6 @@
-Promise = require "bluebird-chains"
+Promise = require "bluebird"
+Chains = require "chains"
+
 debug = require("debug")("coffeemapper:index")
 
 uuid = ->
@@ -26,27 +28,32 @@ baseProcessor = {
     return item[key]
 }
 
-promiseHook = (key, data, map, src, proc, refid) ->
-  return new Promise (res, rej) ->
+setValueHook = (key, data, map, src, proc, refid) ->
+  return new Promise (resolve, reject) ->
     debug "#{refid} promiseHook - rule #{key} "
     map[key] src, (value) ->
       debug "#{refid} setValue - #{key}: #{value} "
       proc.setValue data, key, value
-      return res()
-    , rej
+      return resolve()
+    , reject
 
 
 singleMap = (src, map, proc, data, refid) ->
   return new Promise (resolve, reject) ->
-    debug "#{refid} singleMap - start "
+    inrefid = uuid()
+
+    debug "#{refid}:#{inrefid} singleMap - start "
     proc = baseProcessor if !proc?
     if !data?
       data = proc.newItem()
-    p = []
+    p = new Chains
+
     for key of map
-      p.push promiseHook(key, data, map, src, proc, refid)
-    Promise.chains.concat(p).then () ->
-      debug "#{refid} singleMap - finish ", p.length
+      p.push setValueHook, [key, data, map, src, proc, inrefid]
+
+    debug "#{refid}:#{inrefid} singleMap - starting chains concat "
+    p.last(p).then () ->
+      debug "#{refid}:#{inrefid} singleMap - finish ", p.length
       resolve data
     , reject
 
@@ -55,14 +62,16 @@ module.exports = (src, map, proc = baseProcessor, data) ->
   return new Promise (resolve, reject) ->
     refid = uuid()
     debug "#{refid} main - start"
-    p = []
+    p = new Chains
     if Array.isArray src
       for s in src
-        p.push singleMap(s, map, proc, data, refid)
+        p.push singleMap, [s, map, proc, data, refid]
     else
-      p.push singleMap(src, map, proc, data, refid)
+      p.push singleMap, [src, map, proc, data, refid]
+
     debug "#{refid} main - processing maps", p.length
-    Promise.chains.collect(p).then (data) ->
+
+    p.collect(p).then (data) ->
       debug "#{refid} main - finish"
       return resolve(data)
     , reject
