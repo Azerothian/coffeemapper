@@ -18,6 +18,16 @@ baseProcessor = {
     return item[key]
 }
 
+promiseHook = (key, data, map, src, proc) ->
+  return new Promise (res, rej) ->
+    debug "executing rule #{key}"
+    map[key] src, (value) ->
+      debug "setValue", key, value
+      proc.setValue data, key, value
+      return res()
+    , rej
+
+
 singleMap = (src, map, proc, data) ->
   return new Promise (resolve, reject) ->
     proc = baseProcessor if !proc?
@@ -25,14 +35,7 @@ singleMap = (src, map, proc, data) ->
       data = proc.newItem()
     p = []
     for key of map
-      p.push () ->
-        return new Promise (res, rej) ->
-          debug "executing rule #{key}"
-          map[key] src, (value) ->
-            debug "setValue", key, value
-            proc.setValue data, key, value
-            return res()
-          , rej
+      p.push promiseHook(key, data, map, src, proc)
 
     debug "starting singleMap run "
     Promise.chains.concat(p).then () ->

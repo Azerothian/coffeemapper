@@ -67,10 +67,13 @@ elementMap = {
   read:
     "VisualStudioVersion": (src, resolve, reject) ->
       value = src.getElement("VisualStudioVersion").properties[0]
+      debug "elementMap.read.VisualStudioVersion", value
       return resolve value
     "Projects": (src, resolve, reject) ->
       projects = src.getElementsByName "Project"
+      debug "elementMap.read.Projects", projects
       #console.log "projs", util.inspect projects
+      #resolve projects
       return map(projects, projectMap.read).then resolve, reject
   write:
     "elements": (src, resolve, reject) ->
@@ -97,7 +100,7 @@ describe 'Object Mapping', () ->
 
       debug "read complete", util.inspect(result[0])
       expect(result[0].Projects[0].name).to.equal("WebApplication1")
-###
+
       debug "write start"
       map(result[0], elementMap.write, elementProcessor).then (re) ->
         expect(re[0].elements[1].name).to.equal("Project")
@@ -111,9 +114,9 @@ describe 'Object Mapping', () ->
         resolve(src.hello)
       }, null, test).then (o) ->
         expect(test.troll).to.equal("hi")
-        debug "test", test
+        #debug "test", test
 
-
+###
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{DAA7C8D8-63E8-4587-842D-B39F01718BF8}"
   ProjectSection(ProjectDependencies) = postProject
     {B68291DE-FCED-46E0-85EE-F273AA73448F} = {B68291DE-FCED-46E0-85EE-F273AA73448F}
