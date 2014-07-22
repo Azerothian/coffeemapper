@@ -35,7 +35,7 @@ setValueHook = (key, data, map, src, proc, refid) ->
       debug "#{refid} setValue - #{key}: #{value} "
       proc.setValue data, key, value
       return resolve()
-    , reject
+    , resolve
 
 
 singleMap = (src, map, proc, data, refid) ->
