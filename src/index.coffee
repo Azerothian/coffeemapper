@@ -1,5 +1,5 @@
 Promise = require "bluebird"
-Chains = require "chains"
+Chains = require "bluebird-chains"
 
 debug = require("debug")("coffeemapper:index")
 
