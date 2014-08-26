@@ -1,6 +1,6 @@
 {
   "name": "coffeemapper",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "coffeemapper ============",
   "main": "build/index.js",
   "scripts": {

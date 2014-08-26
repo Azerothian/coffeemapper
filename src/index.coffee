@@ -20,58 +20,128 @@ isFunction = (functionToCheck) ->
 
 
 baseProcessor = {
-  newItem: () ->
+  newItem: (src) ->
     return {}
   setValue: (item, key, value) ->
     item[key] = value
+
   getValue: (item, key) ->
     return item[key]
 }
 
+finishedMap = (result, isArray, resolve, reject) ->
+  if !isArray
+    resolve(result[0])
+  else
+    resolve(result)
+
 setValueHook = (key, data, map, src, proc, refid) ->
   return new Promise (resolve, reject) ->
     debug "#{refid} promiseHook - rule #{key} "
-    map[key] src, (value) ->
+    setVal = (value) ->
       debug "#{refid} setValue - #{key}: #{value} "
       proc.setValue data, key, value
       return resolve()
-    , resolve
+    if isFunction(map[key])
+      map[key] src, setVal, resolve
+    else
+      val = proc.getValue(src, key)
+      setVal(val)
+
+getNewItem = (data, proc, src) ->
+  return new Promise (resolve, reject) ->
+    if !data?
+      newVar = proc.newItem(src)
+      if newVar instanceof Promise
+        return newVar.then resolve, reject
+      else
+        return resolve(newVar)
+    else
+      resolve()
 
 
-singleMap = (src, map, proc, data, refid) ->
+syncSingleMap = (src, map, proc, data, refid) ->
   return new Promise (resolve, reject) ->
     inrefid = uuid()
 
     debug "#{refid}:#{inrefid} singleMap - start "
     proc = baseProcessor if !proc?
-    if !data?
-      data = proc.newItem()
-    p = new Chains
 
-    for key of map
-      p.push setValueHook, [key, data, map, src, proc, inrefid]
+    getNewItem(data, proc, src).then (result) ->
+      if result?
+        data = result
+      p = new Chains
 
-    debug "#{refid}:#{inrefid} singleMap - starting chains concat "
-    p.last(p).then () ->
-      debug "#{refid}:#{inrefid} singleMap - finish ", p.length
-      resolve data
-    , reject
+      for key of map
+        p.push setValueHook, [key, data, map, src, proc, inrefid]
 
+      debug "#{refid}:#{inrefid} singleMap - starting chains concat "
+      p.last(p).then () ->
+        debug "#{refid}:#{inrefid} singleMap - finish ", p.length
+        resolve data
+      , reject
 
-module.exports = (src, map, proc = baseProcessor, data) ->
+syncMapper = (src, map, data, proc = baseProcessor) ->
+  debug "sync mode"
   return new Promise (resolve, reject) ->
     refid = uuid()
     debug "#{refid} main - start"
     p = new Chains
     if Array.isArray src
       for s in src
-        p.push singleMap, [s, map, proc, data, refid]
+        p.push syncSingleMap, [s, map, proc, data, refid]
     else
-      p.push singleMap, [src, map, proc, data, refid]
+      p.push syncSingleMap, [src, map, proc, data, refid]
 
     debug "#{refid} main - processing maps", p.length
 
-    p.collect(p).then (data) ->
+    p.collect(p).then (result) ->
       debug "#{refid} main - finish"
-      return resolve(data)
+      return finishedMap(result, Array.isArray(src), resolve, reject)
     , reject
+
+
+asyncSingleMap = (src, map, proc, data, refid) ->
+  return new Promise (resolve, reject) ->
+    inrefid = uuid()
+
+    debug "#{refid}:#{inrefid} singleMap - start "
+    proc = baseProcessor if !proc?
+    getNewItem(data, proc, src).then (result) ->
+      if result?
+        data = result
+      p = []
+
+      for key of map
+        p.push setValueHook(key, data, map, src, proc, inrefid)
+
+      debug "#{refid}:#{inrefid} singleMap - starting chains concat "
+      Promise.all(p).then () ->
+        debug "#{refid}:#{inrefid} singleMap - finish ", p.length
+        resolve data
+      , reject
+
+
+asyncMapper = (src, map, data, proc = baseProcessor) ->
+  debug "async mode"
+  return new Promise (resolve, reject) ->
+    refid = uuid()
+    debug "#{refid} main - start"
+    p = []
+    if Array.isArray src
+      for s in src
+        p.push asyncSingleMap(s, map, proc, data, refid)
+    else
+      p.push asyncSingleMap(src, map, proc, data, refid)
+
+    debug "#{refid} main - processing maps", p.length
+
+    Promise.all(p).then (result) ->
+      debug "#{refid} main - finish"
+      return finishedMap(result, Array.isArray(src), resolve, reject)
+    , reject
+
+
+asyncMapper.sync = syncMapper
+
+module.exports = asyncMapper

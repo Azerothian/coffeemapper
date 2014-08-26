@@ -98,30 +98,17 @@ describe 'Object Mapping', () ->
     debug "read start"
     map(core, elementMap.read).then (result) ->
 
-      debug "read complete", util.inspect(result[0])
-      expect(result[0].Projects[0].name).to.equal("WebApplication1")
+      debug "read complete", util.inspect(result)
+      expect(result.Projects[0].name).to.equal("WebApplication1")
 
       debug "write start"
-      map(result[0], elementMap.write, elementProcessor).then (re) ->
-        expect(re[0].elements[1].name).to.equal("Project")
+      map(result, elementMap.write, undefined, elementProcessor).then (re) ->
+        expect(re.elements[1].name).to.equal("Project")
         debug "write complete"#, re[0].elements[1].name
-
-
   it 'context check', ->
     test = {}
     map({hello: "hi"}, {
       "troll": (src, resolve, reject) ->
         resolve(src.hello)
-      }, null, test).then (o) ->
+      }, test).then (o) ->
         expect(test.troll).to.equal("hi")
-        #debug "test", test
-
-###
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{DAA7C8D8-63E8-4587-842D-B39F01718BF8}"
-  ProjectSection(ProjectDependencies) = postProject
-    {B68291DE-FCED-46E0-85EE-F273AA73448F} = {B68291DE-FCED-46E0-85EE-F273AA73448F}
-  EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication1", "ConsoleApplication1\ConsoleApplication1.csproj", "{B68291DE-FCED-46E0-85EE-F273AA73448F}"
-EndProject
-###
